@@ -7,11 +7,13 @@ program testcompaction
 
     real(8), allocatable :: cpuData(:,:)
     real(8), allocatable, device :: gpuData(:,:)
-    integer:: N,count,i,j
+    real(8), allocatable, device :: gpuData_out(:,:)
+    integer:: N,M,count,i,j,tPB=256
 
-    N=8
-    allocate(cpuData(N,4))
-    allocate(gpuData(N,4))  !two more columns, one for d_indices, one for d_isValid
+    N=8;M=4
+    allocate(cpuData(N,M))
+    allocate(gpuData(N,M))  !two more columns, one for d_indices, one for d_isValid
+    allocate(gpuData_out(N,M))
 
     count=0
     do i=1,N
@@ -36,5 +38,14 @@ program testcompaction
     write(*,'(a,8(f5.1,1x))') "After sanning", cpuData(:,2)
     write(*,'(a,8(f5.1,1x))') "After sanning", cpuData(:,3)
     write(*,'(a,8(f5.1,1x))') "After sanning", cpuData(:,4)
+
+    call compaction_copy<<<ceiling(dble(N)/tPB),tPB>>>(&
+    gpuData_out,gpuData(:,4),gpuData(:,3),gpuData,N,M)
+    cpuData=gpuData_out
+
+    write(*,'(a,8(f5.1,1x))') "After compact1", cpuData(:,1)
+    write(*,'(a,8(f5.1,1x))') "After compact1", cpuData(:,2)
+    write(*,'(a,8(f5.1,1x))') "After compact1", cpuData(:,3)
+    write(*,'(a,8(f5.1,1x))') "After compact1", cpuData(:,4)
 
 end program

@@ -2,7 +2,7 @@ module compact_array
 
 contains
     attributes(global) subroutine compaction_copy(d_out,d_indices,d_isValid,&
-                                                   d_in,numElements,n_attri)
+                                                  d_in,numElements,n_attri)
     !For particle transfer between neighbours
     !The first dimension of d_in equals that of d_indices and d_isValid
     !This dimension is the current np_active
@@ -17,15 +17,15 @@ contains
     implicit none
     real(8),intent(out):: d_out(:,:)
     real(8),intent(in):: d_in(:,:)
-    integer,intent(in):: d_indices(:), d_isValid(:)
+    real(8),intent(in):: d_indices(:), d_isValid(:)
     integer,value::numElements, n_attri
     integer:: ii, j   !global index in the array
 
     ii = (blockIdx%x - 1) * blockDim%x + threadIdx%x
-
-    if(ii <= numElements .and. d_isValid(ii) > 0) then
+!
+    if(ii <= numElements .and. idnint(d_isValid(ii)) > 0) then
         do j = 1, n_attri
-            d_out(d_indices(ii),j) = d_in(ii,j)
+            d_out(idnint(d_indices(ii)),j) = d_in(ii,j)
         enddo
     end if
 
@@ -44,7 +44,7 @@ contains
 
     implicit none
     real(8),intent(inout):: d_in(:,:)
-    integer,intent(in):: d_indices(:), d_isValid(:)
+    real(8),intent(in):: d_indices(:), d_isValid(:)
     integer:: holes(:)
     !dimension is determined by np_active - d_indices(np_active)
     !np_active is numElements
@@ -53,14 +53,14 @@ contains
     integer,value:: numElements, n_attri
 
     ii = (blockIdx%x - 1) * blockDim%x + threadIdx%x
-    if(ii <= numElements .and. d_isValid(ii) == 0) then
-        holes(ii - d_indices(ii)) = ii
+    if(ii <= numElements .and. idnint(d_isValid(ii)) == 0) then
+        holes(ii - idnint(d_indices(ii))) = ii
     end if
 
-    ii2 = d_indices(numElements) - d_indices(ii) + 1
+    ii2 = idnint(d_indices(numElements)) - idnint(d_indices(ii)) + 1
     ii  = numElements - ii + 1
 
-    if(ii >= 1 .and. d_isValid(ii) > 0) then
+    if(ii >= 1 .and. idnint(d_isValid(ii)) > 0) then
         do j = 1, n_attri
             d_in(holes(ii2),j) = d_in(ii,j)
         enddo
