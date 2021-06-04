@@ -1,3 +1,5 @@
 .DS_Store
-./prefix_sum/thrust_scan
-./prefix_sum/thrust_scan_MPI
+./prefix_sum/thrust_scan/*.o
+./prefix_sum/thrust_scan/*.mod
+./prefix_sum/thrust_scan_MPI/*.o
+./prefix_sum/thrust_scan_MPI/*.mod
