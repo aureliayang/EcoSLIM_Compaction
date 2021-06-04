@@ -1,0 +1,30 @@
+program testsort
+    use thrust
+
+    real, allocatable :: cpuData(:,:)
+    real, allocatable, device :: gpuData(:,:)
+    integer:: N,count
+
+    N=6
+    allocate(cpuData(N,2))
+    allocate(gpuData(N,2))
+
+    count=0
+
+    do i=1,N
+        do j=1,2
+            count=count+1
+            cpuData(i,j)=count
+        end do
+    end do
+
+    write(*,'(a,6(f5.1,1x))') "Before sanning", cpuData(:,1)
+    write(*,'(a,6(f5.1,1x))') "Before sanning", cpuData(:,2)
+
+    gpuData=cpuData
+    call thrustscan(gpuData(:,2),size(gpuData(:,2)),gpuData(:,2))
+    cpuData=gpuData
+    write(*,'(a,6(f5.1,1x))') "After sanning", cpuData(:,1)
+    write(*,'(a,6(f5.1,1x))') "After sanning", cpuData(:,2)
+
+end program

@@ -1,0 +1,64 @@
+module compact_array
+
+contains
+    attribution(global) subroutine compaction_copy(d_out,d_indices,d_isValid,&
+                                                   d_in,numElements)
+    !For neighbours transfer
+    !The first dimension of d_in equals that of d_indices and d_isValid
+    !It is the current np_active
+    !d_indices is the inclusive Sum-Scan Result which is different from C/C++
+    !original:     1 0 1 1 0 0 1 0
+    !index(or ii): 1 2 3 4 5 6 7 8
+    !prefix sum:   1 1 2 3 3 3 4 4
+    !numElements:  8
+    !Dimension of d_out can be determined by prefix sum,
+    !such as d_indices(np_active) = 4
+    !Coalesced access to global memory or not is determined by block size,
+    !which should be 16*n
+
+    implicit none
+    real(8),intent(out):: d_out(:,:)
+    real(8),intent(in):: d_in(:,:),
+    integer,intent(in):: d_indices(:), d_isValid(:)
+    integer,value::numElements
+    integer:: ii   !global index in the array
+
+    ii = (blockIdx%x - 1) * blockDim%x + threadIdx%x
+
+    if(ii <= numElements .and. d_isValid(ii) > 0) then
+        d_out(d_indices(ii),:) = d_in(ii,:)
+    end if
+
+    end subroutine compaction_copy
+
+    attribution(global) subroutine compaction_inplace(holes,d_indices,d_isValid,&
+                                                      d_in,numElements)
+    !original:     1 0 1 1 0 0 1 0  d_isValid
+    !index(or ii): 1 2 3 4 5 6 7 8  ii
+    !prefix sum:   1 1 2 3 3 3 4 4  d_indices
+    !N-sum(index): 3 3 2 1 1 1 0 0  d_indices(numElements)-d_indices
+    !above+1(ii2): 4 4 3 2 2 2 1 1
+    !numElements:  8
+    !holes:        2 5 6 8
+    !holes index:  1 2 3 4
+
+    implicit none
+    real(8),intent(inout):: d_in(:,:)
+    integer,intent(in):: d_indices(:), d_isValid(:)
+    integer:: holes(:) !dimension is determined by np_active - d_indices(np_active)
+    integer:: ii, ii2   !global index in the array
+
+    ii = (blockIdx%x - 1) * blockDim%x + threadIdx%x
+    if(ii <= numElements .and. d_isValid(ii) == 0) then
+        holes(ii - d_indices(ii)) = ii
+    end if
+
+    ii2 = d_indices(numElements) - d_indices(ii) + 1
+    ii  = numElements - ii + 1
+
+    if(ii >= 1 .and. d_isValid(ii) > 0) then
+        d_in(holes(ii2)) = d_in(ii)
+    end if
+
+    end subroutine compaction_inplace
+end module compact_array

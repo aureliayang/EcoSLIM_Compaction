@@ -1,0 +1,53 @@
+program testsort
+    use cudafor
+    use thrust
+    use mpi
+    use mpiDeviceUtil
+
+    real, allocatable :: cpuData(:,:)
+    real, allocatable, device :: gpuData(:,:)
+    integer:: N,count,deviceID
+    integer:: rank, nproc, ierr
+
+    call mpi_init(ierr)
+    call mpi_comm_size(mpi_comm_world, nproc, ierr)
+    call mpi_comm_rank(mpi_comm_world, rank, ierr)
+
+    call assignDevice(deviceID)
+
+    N=6; count=0
+    allocate(cpuData(N,2))
+    allocate(gpuData(N,2))
+
+    do i=1,N
+        do j=1,2
+            count=count+1+rank
+            cpuData(i,j)=count
+        end do
+    end do
+
+    do i=0,nproc-1
+        call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+        if(i==rank)then
+            print *,rank
+            print *,"Before sanning", cpuData(:,1)
+            print *,"Before sanning", cpuData(:,2)
+        endif
+    enddo
+
+    gpuData=cpuData
+    call thrustscan(gpuData(:,2),size(gpuData(:,2)),gpuData(:,2))
+    cpuData=gpuData
+
+    do i=0,nproc-1
+        call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+        if(i==rank)then
+            print *,rank
+            print *,"After sanning", cpuData(:,1)
+            print *,"After sanning", cpuData(:,2)
+        endif
+    enddo
+
+    call mpi_finalize(ierr)
+
+end program
