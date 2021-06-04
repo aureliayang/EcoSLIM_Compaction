@@ -57,7 +57,7 @@ contains
     ii  = numElements - ii + 1
 
     if(ii >= 1 .and. d_isValid(ii) > 0) then
-        d_in(holes(ii2)) = d_in(ii)
+        d_in(holes(ii2),:) = d_in(ii,:)
     end if
 
     end subroutine compaction_inplace
