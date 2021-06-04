@@ -9,3 +9,4 @@ prefix_sum/thrust_scan_MPI/*.mod
 prefix_sum/thrust_scan_MPI/*.out
 prefix_sum/thrust_scan_MPI/*.slurm
 prefix_sum/thrust_scan_MPI/test_scan
+prefix_sum/thrust_scan_MPI/slurm

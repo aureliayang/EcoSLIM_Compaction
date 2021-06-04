@@ -1,5 +1,0 @@
-Currently Loaded Modulefiles:
- 1) nvhpc/21.1   2) cudatoolkit/11.1   3) openmpi/nvhpc-21.1/4.1.0  
-srun: error: della-i14g2: tasks 2-3: Illegal instruction (core dumped)
-srun: launch/slurm: _step_signal: Terminating StepId=34826029.0
-srun: error: della-i14g1: tasks 0-1: Illegal instruction (core dumped)

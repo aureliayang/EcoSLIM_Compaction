@@ -1,6 +1,0 @@
-Currently Loaded Modulefiles:
- 1) nvhpc/21.1   2) cudatoolkit/11.1  
- Before sanning    1.000000        0.000000        2.000000        2.000000    
-     1.000000        3.000000    
- After sanning    0.000000        1.000000        1.000000        3.000000     
-    5.000000        6.000000    
