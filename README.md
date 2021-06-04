@@ -1,1 +1,1 @@
-#Improved Stream Compaction 
+Improved Stream Compaction 
