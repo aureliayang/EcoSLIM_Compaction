@@ -36,6 +36,7 @@ contains
     !original:        1 0 1 1 0 0 1 0  d_isValid
     !index(or ii):    1 2 3 4 5 6 7 8  ii
     !prefix sum:      1 1 2 3 3 3 4 4  d_indices
+    !ii-d_indices:    0 1 1 1 2 3 3 4
     !N-sum(index):    3 3 2 1 1 1 0 0  d_indices(numElements)-d_indices
     !N-sum(index)+1:  4 4 3 2 2 2 1 1  ii2
     !numElements:     8
@@ -57,8 +58,8 @@ contains
         holes(ii - idnint(d_indices(ii))) = ii
     end if
 
-    ii2 = idnint(d_indices(numElements)) - idnint(d_indices(ii)) + 1
     ii  = numElements - ii + 1
+    ii2 = idnint(d_indices(numElements)) - idnint(d_indices(ii)) + 1
 
     if(ii >= 1 .and. idnint(d_isValid(ii)) > 0) then
         do j = 1, n_attri

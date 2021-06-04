@@ -1,0 +1,3 @@
+Currently Loaded Modulefiles:
+ 1) nvhpc/21.1   2) cudatoolkit/11.1   3) openmpi/nvhpc-21.1/4.1.0  
+/var/spool/slurmd/job34838394/slurm_script: line 21: 2766821 Segmentation fault      (core dumped) ./test_compact
