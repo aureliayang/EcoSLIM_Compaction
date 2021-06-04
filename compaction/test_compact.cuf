@@ -1,0 +1,40 @@
+program testcompaction
+    use cudafor
+    use thrust
+    use compact_array
+
+    implicit none
+
+    real(8), allocatable :: cpuData(:,:)
+    real(8), allocatable, device :: gpuData(:,:)
+    integer:: N,count,i,j
+
+    N=8
+    allocate(cpuData(N,4))
+    allocate(gpuData(N,4))  !two more columns, one for d_indices, one for d_isValid
+
+    count=0
+    do i=1,N
+        do j=1,2
+            count=count+1
+            cpuData(i,j)=dble(count)
+        end do
+    end do
+    cpuData(:,3) = [1.d0, 0.d0, 1.d0, 1.d0, 0.d0, 0.d0, 1.d0, 0.d0]
+    cpuData(:,4) = 0.d0
+
+    write(*,'(a,8(f5.1,1x))') "Before sanning", cpuData(:,1)
+    write(*,'(a,8(f5.1,1x))') "Before sanning", cpuData(:,2)
+    write(*,'(a,8(f5.1,1x))') "Before sanning", cpuData(:,3)
+    write(*,'(a,8(f5.1,1x))') "Before sanning", cpuData(:,4)
+
+    gpuData=cpuData
+    call thrustscan(gpuData(:,3),size(gpuData(:,3)),gpuData(:,4))
+    cpuData=gpuData
+
+    write(*,'(a,8(f5.1,1x))') "After sanning", cpuData(:,1)
+    write(*,'(a,8(f5.1,1x))') "After sanning", cpuData(:,2)
+    write(*,'(a,8(f5.1,1x))') "After sanning", cpuData(:,3)
+    write(*,'(a,8(f5.1,1x))') "After sanning", cpuData(:,4)
+
+end program
