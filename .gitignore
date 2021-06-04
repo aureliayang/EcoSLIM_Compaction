@@ -1,1 +1,3 @@
 .DS_Store
+./prefix_sum/thrust_scan
+./prefix_sum/thrust_scan_MPI
