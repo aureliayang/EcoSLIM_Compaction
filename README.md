@@ -3,3 +3,4 @@
 2. prefix_sum/thrust_scan: test for scan using a column in 2D array. It uses a wrapper to call scan in Thrust.
 3. prefix_sum/thrust_scan_MPI: test for scan using MPI.
 4. Documents/: presentation slides in the GPU Hackathon
+5. serial_code/: the origional serial code
