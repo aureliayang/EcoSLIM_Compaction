@@ -58,10 +58,10 @@ contains
         holes(ii - idnint(d_indices(ii))) = ii
     end if
 
-    ii  = numElements - ii + 1
+    !ii  = numElements - ii + 1
     ii2 = idnint(d_indices(numElements)) - idnint(d_indices(ii)) + 1
 
-    if(ii >= 1 .and. idnint(d_isValid(ii)) > 0 .and. &
+    if(ii <= numElements .and. idnint(d_isValid(ii)) > 0 .and. &
        holes(ii2) <= idnint(d_indices(numElements))) then
         do j = 1, n_attri
             d_in(holes(ii2),j) = d_in(ii,j)
