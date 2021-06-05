@@ -40,10 +40,11 @@ program testcompaction
     write(*,'(a,8(f5.1,1x))') "After sanning", cpuData(:,3)
     write(*,'(a,8(f5.1,1x))') "After sanning", cpuData(:,4)
 
+    allocate(holes(idnint(cpuData(N,4))))
+
     call compaction_copy<<<ceiling(dble(N)/tPB),tPB>>>(&
     gpuData_out,gpuData(:,4),gpuData(:,3),gpuData,N,M)
     cpuData=gpuData_out
-    allocate(holes(4))
 
     write(*,'(a,8(f5.1,1x))') "After compact1", cpuData(:,1)
     write(*,'(a,8(f5.1,1x))') "After compact1", cpuData(:,2)
