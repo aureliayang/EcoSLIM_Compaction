@@ -1,0 +1,63 @@
+program testcompaction
+    use cudafor
+    use thrust
+    use compact_array
+
+    implicit none
+
+    real(8), allocatable :: cpuData(:,:)
+    real(8), allocatable, device :: gpuData(:,:)
+    real(8), allocatable, device :: gpuData_out(:,:)
+    integer, allocatable, device :: holes(:)
+    integer:: N,M,count,i,j,tPB=256
+
+    N=8;M=4
+    allocate(cpuData(N,M))
+    allocate(gpuData(N,M))  !two more columns, one for d_indices, one for d_isValid
+    allocate(gpuData_out(N,M))
+
+    count=0
+    do i=1,N
+        do j=1,2
+            count=count+1
+            cpuData(i,j)=dble(count)
+        end do
+    end do
+    cpuData(:,3) = [1.d0, 0.d0, 1.d0, 1.d0, 0.d0, 0.d0, 1.d0, 0.d0]
+    cpuData(:,4) = 0.d0
+
+    write(*,'(a,8(f5.1,1x))') "Before sanning", cpuData(:,1)
+    write(*,'(a,8(f5.1,1x))') "Before sanning", cpuData(:,2)
+    write(*,'(a,8(f5.1,1x))') "Before sanning", cpuData(:,3)
+    write(*,'(a,8(f5.1,1x))') "Before sanning", cpuData(:,4)
+
+    gpuData=cpuData
+    call thrustscan(gpuData(:,3),size(gpuData(:,3)),gpuData(:,4))
+    cpuData=gpuData
+
+    write(*,'(a,8(f5.1,1x))') "After sanning", cpuData(:,1)
+    write(*,'(a,8(f5.1,1x))') "After sanning", cpuData(:,2)
+    write(*,'(a,8(f5.1,1x))') "After sanning", cpuData(:,3)
+    write(*,'(a,8(f5.1,1x))') "After sanning", cpuData(:,4)
+
+    allocate(holes(idnint(cpuData(N,4))))
+
+    call compaction_copy<<<ceiling(dble(N)/tPB),tPB>>>(&
+    gpuData_out,gpuData(:,4),gpuData(:,3),gpuData,N,M)
+    cpuData=gpuData_out
+
+    write(*,'(a,8(f5.1,1x))') "After compact1", cpuData(:,1)
+    write(*,'(a,8(f5.1,1x))') "After compact1", cpuData(:,2)
+    write(*,'(a,8(f5.1,1x))') "After compact1", cpuData(:,3)
+    write(*,'(a,8(f5.1,1x))') "After compact1", cpuData(:,4)
+
+    call compaction_inplace<<<ceiling(dble(N)/tPB),tPB>>>(&
+    holes,gpuData(:,4),gpuData(:,3),gpuData,N,M)
+    cpuData=gpuData
+
+    write(*,'(a,8(f5.1,1x))') "After compact2", cpuData(:,1)
+    write(*,'(a,8(f5.1,1x))') "After compact2", cpuData(:,2)
+    write(*,'(a,8(f5.1,1x))') "After compact2", cpuData(:,3)
+    write(*,'(a,8(f5.1,1x))') "After compact2", cpuData(:,4)
+
+end program
