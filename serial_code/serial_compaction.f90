@@ -1,5 +1,5 @@
 program serial_compaction
-    use cudafor
+
     implicit none
 
     integer:: ii, np_active, np_active2, npout
