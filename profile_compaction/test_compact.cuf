@@ -5,59 +5,80 @@ program testcompaction
 
     implicit none
 
-    real(8), allocatable :: cpuData(:,:)
+    real(8), allocatable :: cpuData_original(:,:), cpuData(:,:)
     real(8), allocatable, device :: gpuData(:,:)
-    real(8), allocatable, device :: gpuData_out(:,:)
+    !when using compaction on gpu, the copy between host and device are removed,
+    !so this is included in the time saved by compaction.
     integer, allocatable, device :: holes(:)
-    integer:: N,M,count,i,j,tPB=256
+    !it is temporary GPU array using global memory
 
-    N=8;M=4
-    allocate(cpuData(N,M))
-    allocate(gpuData(N,M))  !two more columns, one for d_indices, one for d_isValid
-    allocate(gpuData_out(N,M))
+    type (cudaEvent) :: startEvent, stopEvent
+    real(8):: time_total=0.d0, time1, time2, time3
 
-    count=0
-    do i=1,N
-        do j=1,2
-            count=count+1
-            cpuData(i,j)=dble(count)
-        end do
-    end do
-    cpuData(:,3) = [1.d0, 0.d0, 1.d0, 1.d0, 0.d0, 0.d0, 1.d0, 0.d0]
-    cpuData(:,4) = 0.d0
+    integer:: ncount=0, i, j, tPB=256  !test will keep blocksize as 256.
+    integer:: M=12, N=80000000, temp
+    !12 will increase the data transfer time, we can do simply scaling when doing the profile
 
-    write(*,'(a,8(f5.1,1x))') "Before sanning", cpuData(:,1)
-    write(*,'(a,8(f5.1,1x))') "Before sanning", cpuData(:,2)
-    write(*,'(a,8(f5.1,1x))') "Before sanning", cpuData(:,3)
-    write(*,'(a,8(f5.1,1x))') "Before sanning", cpuData(:,4)
+    istat = cudaEventCreate(startEvent)
+    istat = cudaEventCreate(stopEvent)
 
-    gpuData=cpuData
-    call thrustscan(gpuData(:,3),size(gpuData(:,3)),gpuData(:,4))
-    cpuData=gpuData
+    !==============allocate arrays
+    allocate(cpuData_original(N,M), cpuData(N,M))
+    allocate(gpuData(N,M))
+    !two more columns relative to serial code, one for d_indices, one for d_isValid
 
-    write(*,'(a,8(f5.1,1x))') "After sanning", cpuData(:,1)
-    write(*,'(a,8(f5.1,1x))') "After sanning", cpuData(:,2)
-    write(*,'(a,8(f5.1,1x))') "After sanning", cpuData(:,3)
-    write(*,'(a,8(f5.1,1x))') "After sanning", cpuData(:,4)
+    !==============prepare the original CPU array
+    do i = 1, N
+        do j = 1, 10
+            ncount = ncount + 1
+            cpuData_original(i,j) = dble(ncount)
+        enddo
+    enddo
 
-    allocate(holes(idnint(cpuData(N,4))))
+    do i = 1, N/8
+        cpuData_original((i-1)*8+1:i*8,8) = [1.d0, 0.d0, 1.d0, 1.d0, 0.d0, 0.d0, 1.d0, 0.d0]
+    enddo
+    cpuData_original(:,11:12) = 0.d0
 
-    call compaction_copy<<<ceiling(dble(N)/tPB),tPB>>>(&
-    gpuData_out,gpuData(:,4),gpuData(:,3),gpuData,N,M)
-    cpuData=gpuData_out
+    !==============loop start
+        cpuData = cpuData_original
+        !copy data from origional since we will do 30 times to get average
+        cpuData(:,11) = cpuData(:,8) !this should be done on GPU
+    !----------------
+        istat = cudaEventRecord(startEvent, 0)
 
-    write(*,'(a,8(f5.1,1x))') "After compact1", cpuData(:,1)
-    write(*,'(a,8(f5.1,1x))') "After compact1", cpuData(:,2)
-    write(*,'(a,8(f5.1,1x))') "After compact1", cpuData(:,3)
-    write(*,'(a,8(f5.1,1x))') "After compact1", cpuData(:,4)
+        gpuData=cpuData
+        call thrustscan(gpuData(:,11),size(gpuData(:,11)),gpuData(:,12))
+        temp = gpuData(N,12)
 
-    call compaction_inplace<<<ceiling(dble(N)/tPB),tPB>>>(&
-    holes,gpuData(:,4),gpuData(:,3),gpuData,N,M)
-    cpuData=gpuData
+        istat = cudaEventRecord(stopEvent, 0)
+        istat = cudaEventSynchronize(stopEvent)
+        istat = cudaEventElapsedTime(time1, startEvent, stopEvent)
+    !----------------
+        allocate(holes(idnint(N-temp)))
+        !This time is not considered.
+    !----------------
+        istat = cudaEventRecord(startEvent, 0)
 
-    write(*,'(a,8(f5.1,1x))') "After compact2", cpuData(:,1)
-    write(*,'(a,8(f5.1,1x))') "After compact2", cpuData(:,2)
-    write(*,'(a,8(f5.1,1x))') "After compact2", cpuData(:,3)
-    write(*,'(a,8(f5.1,1x))') "After compact2", cpuData(:,4)
+        call compaction_inplace<<<ceiling(dble(N)/tPB),tPB>>>(&
+        holes,gpuData(:,11),gpuData(:,12),gpuData,N,M)
+        cpuData=gpuData
+
+        istat = cudaEventRecord(stopEvent, 0)
+        istat = cudaEventSynchronize(stopEvent)
+        istat = cudaEventElapsedTime(time2, startEvent, stopEvent)
+    !----------------
+        time_total = time_total + time1 + time2
+    !==============loop end
+
+    time_total = time_total/30.d0
+
+    istat = cudaEventDestroy(startEvent)
+    istat = cudaEventDestroy(stopEvent)
+
+    !write(*,'(a,8(f5.1,1x))') "After compact2", cpuData(:,1)
+    !write(*,'(a,8(f5.1,1x))') "After compact2", cpuData(:,2)
+    !write(*,'(a,8(f5.1,1x))') "After compact2", cpuData(:,3)
+    !write(*,'(a,8(f5.1,1x))') "After compact2", cpuData(:,4)
 
 end program
