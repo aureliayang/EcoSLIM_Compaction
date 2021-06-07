@@ -7,5 +7,5 @@
 6. profile_compaction/: the parallel in-place compaction code
 
 The results of tests for serial and paralel code: 
-a. the parallel cod use 10.685 ms, the serial code use 1445.623 ms, so th speedup is 135-fold (1445.623/10.685)
+a. the parallel cod use 10.685 ms, the serial code use 1445.623 ms, so th speedup is 135-fold (1445.623/10.685)  
 b. considering that it is not necessary to transfer data if using parallel code on GPU, it is 190-fold ((1445.623+344.304+244.287)/10.685)
