@@ -11,20 +11,18 @@ program testcompaction
     real(8), allocatable, device :: gpuData_out(:,:)
     !when using compaction on gpu, the copy between host and device are removed,
     !so this is included in the time saved by compaction.
-    integer, allocatable, device :: holes(:)
-    !it is temporary GPU array using global memory
+    integer, allocatable, device :: holes(:) !it is temporary GPU array using global memory
 
-    !type (cudaEvent) :: startEvent, stopEvent
-    !real:: time1_total=0., time2_total=0., time3_total=0., time4_total=0.
-    !real:: time1, time2, time3, time4
+    type (cudaEvent) :: startEvent, stopEvent
+    real:: time1_total=0., time2_total=0., time3_total=0.
+    real:: time1, time2, time3
     real(8):: temp
 
     integer:: istat, ncount=0, i, j, tPB=256  !test will keep blocksize as 256.
-    integer:: M=12, N=80
-    !12 will increase the data transfer time, we can do simply scaling when doing the profile
+    integer:: M=12, N=80000000
 
-    !istat = cudaEventCreate(startEvent)
-    !istat = cudaEventCreate(stopEvent)
+    istat = cudaEventCreate(startEvent)
+    istat = cudaEventCreate(stopEvent)
 
     !==============allocate arrays
     allocate(cpuData_original(N,M), cpuData(N,M))
@@ -38,76 +36,67 @@ program testcompaction
             cpuData_original(i,j) = dble(ncount)
         enddo
     enddo
-
     do i = 1, N/8
         cpuData_original((i-1)*8+1:i*8,8) = [1.d0, 0.d0, 1.d0, 1.d0, 0.d0, 0.d0, 1.d0, 0.d0]
     enddo
     cpuData_original(:,11:12) = 0.d0
 
     !==============loop start
-    !do i = 1, 30
+    do i = 1, 30
         cpuData = cpuData_original
         !copy data from origional since we will do 30 times to get average
         cpuData(:,11) = cpuData(:,8) !this should be done on GPU
     !----------------
-        !istat = cudaEventRecord(startEvent, 0)
+        istat = cudaEventRecord(startEvent, 0)
 
         gpuData = cpuData
 
-        !istat = cudaEventRecord(stopEvent, 0)
-        !istat = cudaEventSynchronize(stopEvent)
-        !istat = cudaEventElapsedTime(time1, startEvent, stopEvent)
+        istat = cudaEventRecord(stopEvent, 0)
+        istat = cudaEventSynchronize(stopEvent)
+        istat = cudaEventElapsedTime(time1, startEvent, stopEvent)
 
         !----------------
-        !istat = cudaEventRecord(startEvent, 0)
+        istat = cudaEventRecord(startEvent, 0)
 
         call thrustscan(gpuData(:,11),size(gpuData(:,11)),gpuData(:,12))
-
         temp = gpuData(N,12); allocate(holes(N-idnint(temp))) !This time is not considered？
 
-        call compaction_copy<<<ceiling(dble(N)/tPB),tPB>>>(&
-        gpuData_out,gpuData(:,12),gpuData(:,11),gpuData,N,M)
+        !call compaction_copy<<<ceiling(dble(N)/tPB),tPB>>>(&
+        !gpuData_out,gpuData(:,12),gpuData(:,11),gpuData,N,M)
         !not in-place
 
         call compaction_inplace<<<ceiling(dble(N)/tPB),tPB>>>(&
         holes,gpuData(:,12),gpuData(:,11),gpuData,N,M)
         !in place
 
-        !istat = cudaEventRecord(stopEvent, 0)
-        !istat = cudaEventSynchronize(stopEvent)
-        !istat = cudaEventElapsedTime(time2, startEvent, stopEvent)
+        istat = cudaEventRecord(stopEvent, 0)
+        istat = cudaEventSynchronize(stopEvent)
+        istat = cudaEventElapsedTime(time2, startEvent, stopEvent)
 
         !----------------
-        !istat = cudaEventRecord(startEvent, 0)
+        istat = cudaEventRecord(startEvent, 0)
 
-        cpuData = gpuData
+        cpuData(:,1:10) = gpuData(:,1:10)
 
-        !istat = cudaEventRecord(stopEvent, 0)
-        !istat = cudaEventSynchronize(stopEvent)
-        !istat = cudaEventElapsedTime(time3, startEvent, stopEvent)
+        istat = cudaEventRecord(stopEvent, 0)
+        istat = cudaEventSynchronize(stopEvent)
+        istat = cudaEventElapsedTime(time3, startEvent, stopEvent)
     !----------------
-        !time1_total = time1_total + time1
-        !time2_total = time2_total + time2
-        !time3_total = time3_total + time3
-    !enddo
+        time1_total = time1_total + time1
+        time2_total = time2_total + time2
+        time3_total = time3_total + time3
+    enddo
     !==============loop end
 
-    !time1_total = time1_total/30.d0
-    !time2_total = time2_total/30.d0
-    !time3_total = time3_total/30.d0
-!
-    !print *, time1_total, time2_total, time3_total
-!
-    !istat = cudaEventDestroy(startEvent)
-    !istat = cudaEventDestroy(stopEvent)
+    time1_total = time1_total/30.d0
+    time2_total = time2_total/30.d0
+    time3_total = time3_total/30.d0
 
-    !write(*,*) "After compact2", cpuData(:,1)
-    !write(*,'(a,8(f13.1,1x))') "After compact2", cpuData(1:8,10)
-    !write(*,'(a,8(f13.1,1x))') "After compact2", cpuData(1:8,11)
-    !write(*,'(a,8(f13.1,1x))') "After compact2", cpuData(1:8,12)
-    !write(*,'(a,8(f13.1,1x))') "After compact2", cpuData(N-7:N,9)
-    !write(*,'(a,8(f13.1,1x))') "After compact2", cpuData(N-7:N,10)
-    !write(*,'(a,8(f13.1,1x))') "After compact2", cpuData(N-7:N,11)
-    !write(*,'(a,8(f13.1,1x))') "After compact2", cpuData(N-7:N,12)
+    write(*,'(a,3(f8.3,1x))') 'Time used (ms):', time1_total, time2_total, time3_total
+
+    istat = cudaEventDestroy(startEvent)
+    istat = cudaEventDestroy(stopEvent)
+
+    write(*,'(a,/,100(8(f13.1,1x),/))') "After compact in-place:", cpuData(1:800,1)
 
 end program

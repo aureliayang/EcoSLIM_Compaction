@@ -62,8 +62,9 @@ contains
     ii2 = idnint(d_indices(numElements)) - idnint(d_indices(ii)) + 1
 
     if(ii <= numElements .and. idnint(d_isValid(ii)) > 0 .and. &
-       holes(ii2) <= idnint(d_indices(numElements))) then
-        do j = 1, n_attri
+       holes(ii2) <= idnint(d_indices(numElements)) .and. &
+       holes(ii2) >= 1) then
+        do j = 1, n_attri-2
             d_in(holes(ii2),j) = d_in(ii,j)
         enddo
     end if
