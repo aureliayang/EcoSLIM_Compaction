@@ -1,7 +1,7 @@
 # Improved Stream Compaction 
 1. **compaction/ecoslim_compaction.cuf** is a module that contians two device subroutines. Both are for 2D particle array. The first one needs a temporary array while the second one is in-place compaction. It has passed test on Della-GPU at Princeton through a small array of size 8*4.
 2. **prefix_sum/thrust_scan:** test for scan using a column in 2D array. It uses a wrapper to call scan in Thrust.
-3. **prefix_sum/thrust_scan_MPI:** test for scan using MPI (tested on TigerGPU).
+3. **prefix_sum/thrust_scan_MPI:** test for scan using MPI (tested on Tiger-GPU).
 4. **Documents/:** presentation slides in the GPU Hackathon
 5. **profile_serial_code/:** the origional serial code
 6. **profile_compaction/:** the parallel in-place compaction code
