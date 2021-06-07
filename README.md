@@ -6,7 +6,7 @@
 5. **profile_serial_code/:** the origional serial code
 6. **profile_compaction/:** the parallel in-place compaction code
 
-**The results of tests using array of size 80,000,000 for serial and paralel codes:**   
+**The results of tests using array of size 80,000,000*10 for serial and paralel codes:**   
 **Environment (Princeton Dell-GPU cluster):** AMD EPYC 7H12 64-Core Processor, NVIDIA A100 GPU, nvhpc/21.1, cudatoolkit/11.1  
 **a.** the parallel cod use 10.685 ms, the serial code use 1445.623 ms, so the speedup is **135-fold** (1445.623/10.685)  
 **b.** considering that it is not necessary to transfer data if using parallel code on GPU, it is **190-fold** ((1445.623+344.304+244.287)/10.685)
