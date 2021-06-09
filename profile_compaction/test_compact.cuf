@@ -61,13 +61,13 @@ program testcompaction
         call thrustscan(gpuData(:,11),size(gpuData(:,11)),gpuData(:,12))
         temp = gpuData(N,12); allocate(holes(N-idnint(temp))) !This time is not considered？
 
-        !call compaction_copy<<<ceiling(dble(N)/tPB),tPB>>>(&
-        !gpuData_out,gpuData(:,12),gpuData(:,11),gpuData,N,M)
-        !not in-place
+        call prepare_holes<<<ceiling(dble(N)/tPB),tPB>>>(&
+        holes,gpuData(:,12),gpuData(:,11),N)
 
         call compaction_inplace<<<ceiling(dble(N)/tPB),tPB>>>(&
         holes,gpuData(:,12),gpuData(:,11),gpuData,N,M)
         !in place
+        deallocate(holes)
 
         istat = cudaEventRecord(stopEvent, 0)
         istat = cudaEventSynchronize(stopEvent)

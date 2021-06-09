@@ -31,8 +31,36 @@ contains
 
     end subroutine compaction_copy
 
+    attributes(global) subroutine prepare_holes(holes,d_indices,d_isValid,&
+                                                numElements)
+    !original:        1 0 1 1 0 0 1 0  d_isValid
+    !index(or ii):    1 2 3 4 5 6 7 8  ii
+    !prefix sum:      1 1 2 3 3 3 4 4  d_indices
+    !ii-d_indices:    0 1 1 1 2 3 3 4
+    !N-sum(index):    3 3 2 1 1 1 0 0  d_indices(numElements)-d_indices
+    !N-sum(index)+1:  4 4 3 2 2 2 1 1  ii2
+    !numElements:     8
+    !holes:           2 5 6 8
+    !holes index:     1 2 3 4
+
+    implicit none
+    real(8),intent(in):: d_indices(:), d_isValid(:)
+    integer,intent(out):: holes(:)
+    !dimension is determined by np_active - d_indices(np_active)
+    !np_active is numElements
+    !holes is a temporary array that just needs dynamic allocation on cpu
+    integer:: ii   !global index in the array
+    integer,value:: numElements
+
+    ii = (blockIdx%x - 1) * blockDim%x + threadIdx%x
+    if(ii <= numElements .and. idnint(d_isValid(ii)) == 0) then
+        holes(ii - idnint(d_indices(ii))) = ii
+    end if
+
+    end subroutine prepare_holes
+
     attributes(global) subroutine compaction_inplace(holes,d_indices,d_isValid,&
-                                                      d_in,numElements,n_attri)
+                                                     d_in,numElements,n_attri)
     !original:        1 0 1 1 0 0 1 0  d_isValid
     !index(or ii):    1 2 3 4 5 6 7 8  ii
     !prefix sum:      1 1 2 3 3 3 4 4  d_indices
@@ -46,7 +74,7 @@ contains
     implicit none
     real(8),intent(inout):: d_in(:,:)
     real(8),intent(in):: d_indices(:), d_isValid(:)
-    integer:: holes(:)
+    integer,intent(in):: holes(:)
     !dimension is determined by np_active - d_indices(np_active)
     !np_active is numElements
     !holes is a temporary array that just needs dynamic allocation on cpu
@@ -54,27 +82,14 @@ contains
     integer,value:: numElements, n_attri
 
     ii = (blockIdx%x - 1) * blockDim%x + threadIdx%x
-    if(ii <= numElements .and. idnint(d_isValid(ii)) == 0) then
-        holes(ii - idnint(d_indices(ii))) = ii
-    end if
-
-    !ii  = numElements - ii + 1
     ii2 = idnint(d_indices(numElements)) - idnint(d_indices(ii)) + 1
 
     if(ii <= numElements .and. idnint(d_isValid(ii)) > 0 .and. &
-       holes(ii2) <= idnint(d_indices(numElements)) .and. &
-       holes(ii2) >= 1) then
+       holes(ii2) <= idnint(d_indices(numElements))) then
         do j = 1, n_attri-2
             d_in(holes(ii2),j) = d_in(ii,j)
         enddo
     end if
-
-    !!clear values with index larger than updated np_active.
-    !ii = (blockIdx%x - 1) * blockDim%x + threadIdx%x
-    !if(ii > d_indices(numElements) .and. ii <= numElements) then
-    !    d_in(ii,:) = 0.d0
-    !!Is vector operation supported on GPU?
-    !end if
 
     end subroutine compaction_inplace
 end module compact_array
